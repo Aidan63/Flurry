@@ -2,6 +2,8 @@ package parcel;
 
 import uk.aidanlee.flurry.api.resources.Resource.ShaderType;
 
+// Parcel Structures
+
 typedef JsonResource = {
     final id : String;
     final path : String;
@@ -72,6 +74,8 @@ typedef JsonDefinition = {
     final parcels : Array<JsonParcel>;
 }
 
+// Font Structures
+
 typedef JsonFontAtlas = {
     final type : String;
     final distanceRange : Int;
@@ -125,6 +129,8 @@ typedef JsonSize = {
     final h : Int;
 }
 
+// Sprite Structures
+
 typedef JsonSpriteFrame = {
     final filename : String;
     final frame : JsonRectangle;
@@ -155,4 +161,26 @@ typedef JsonSpriteMeta = {
 typedef JsonSprite = {
     final frames : Array<JsonSpriteFrame>;
     final meta : JsonSpriteMeta;
+}
+
+// Atlas Structures
+
+typedef JsonAtlas = {
+    final name : String;
+    final pages : Array<JsonAtlasPage>;
+}
+
+typedef JsonAtlasPage = {
+    final image : String;
+    final width : Int;
+    final height : Int;
+    final packed : Array<JsonAtlasImage>;
+}
+
+typedef JsonAtlasImage = {
+    final file : String;
+    final x : Int;
+    final y : Int;
+    final width : Int;
+    final height : Int;
 }

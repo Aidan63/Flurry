@@ -310,55 +310,15 @@ class Packer
 
         // Pack all of our collected images
 
-        final packFile = Path.join([ tempAssets, 'pack.json' ]);
-        final packJson = '{
-            "pot": true,
-            "paddingX": ${ _options.pagePadX },
-            "paddingY": ${ _options.pagePadY },
-            "bleed": true,
-            "bleedIterations": 2,
-            "edgePadding": true,
-            "duplicatePadding": false,
-            "rotation": false,
-            "minWidth": 16,
-            "minHeight": 16,
-            "maxWidth": ${ _options.pageMaxWidth },
-            "maxHeight": ${ _options.pageMaxHeight },
-            "square": false,
-            "stripWhitespaceX": false,
-            "stripWhitespaceY": false,
-            "alphaThreshold": 0,
-            "filterMin": "Nearest",
-            "filterMag": "Nearest",
-            "wrapX": "ClampToEdge",
-            "wrapY": "ClampToEdge",
-            "format": "RGBA8888",
-            "alias": true,
-            "outputFormat": "png",
-            "jpegQuality": 0.9,
-            "ignoreBlankImages": true,
-            "fast": ${ _options.fast },
-            "debug": false,
-            "combineSubdirectories": false,
-            "flattenPaths": false,
-            "premultiplyAlpha": false,
-            "useIndexes": false,
-            "limitMemory": true,
-            "grid": false,
-            "scale": [ 1 ],
-            "scaleSuffix": [ "" ],
-            "scaleResampling": [ "bicubic" ]
-        }';
-
-        fs.file.writeText(packFile, packJson);
-
-        switch proc.run('java', [
-            '-Xmx4096m',
-            '-jar', Path.join([ toolsDir, 'runnable-texturepacker.jar' ]),
-            tempAssets,   // input
-            tempAssets,   // output
-            _parcel.name, // atlas name
-            packFile      // atlas settings
+        switch proc.run('hx-atlas-gen', [
+            '--directory', tempAssets,
+            '--output', tempAssets,
+            '--name', _parcel.name,
+            '--width', Std.string(_options.pageMaxWidth),
+            '--height', Std.string(_options.pageMaxHeight),
+            '--x-pad', Std.string(_options.pagePadX),
+            '--y-pad', Std.string(_options.pagePadY),
+            '--threads', '4'
         ])
         {
             case Failure(message): return Failure(message);
@@ -368,16 +328,16 @@ class Packer
         // Read the packed result
 
         final assets = new Array<Resource>();
-        final pages  = GdxParser.parse(Path.join([ tempAssets, '${ _parcel.name }.atlas' ]), fs);
+        final atlas : JsonAtlas = tink.Json.parse(fs.file.getText(Path.join([ tempAssets, '${ _parcel.name }.json' ]))); //GdxParser.parse(Path.join([ tempAssets, '${ _parcel.name }.json' ]), fs);
 
         // Create images for all unique pages
 
-        for (page in pages)
+        for (page in atlas.pages)
         {
-            final png = Path.join([ tempAssets, page.image.toString() ]);
+            final png = Path.join([ tempAssets, page.image ]);
 
             assets.push(new ImageResource(
-                page.image.file,
+                page.image,
                 page.width,
                 page.height,
                 imageBytes(png)));
@@ -387,15 +347,15 @@ class Packer
 
         for (id in _parcel.images.or([]))
         {
-            for (page in pages)
+            for (page in atlas.pages)
             {
                 page
-                    .sections
-                    .find(section -> section.name == id)
+                    .packed
+                    .find(section -> section.file == id)
                     .run(section -> {
                         assets.push(new ImageFrameResource(
                             id,
-                            page.image.file,
+                            page.image,
                             section.x,
                             section.y,
                             section.width,
@@ -408,18 +368,18 @@ class Packer
             }
         }
 
-        for (atlas in atlases)
+        for (gdxAtlas in atlases)
         {
-            for (page in atlas)
+            for (page in gdxAtlas)
             {
-                switch findSection(page.image.file, pages)
+                switch findSection(page.image.file, atlas.pages)
                 {
                     case Success(found):
                         for (section in page.sections)
                         {
                             assets.push(new ImageFrameResource(
                                 section.name,
-                                found.page.image.file,
+                                found.page.image,
                                 found.section.x + section.x,
                                 found.section.y + section.y,
                                 section.width,
@@ -438,7 +398,7 @@ class Packer
 
         for (bmfont in bmfonts)
         {
-            switch findSection(bmfont.id, pages)
+            switch findSection(bmfont.id, atlas.pages)
             {
                 case Success(found):
                     final chars = new Map<Int, Character>();
@@ -476,8 +436,8 @@ class Packer
                     }
         
                     assets.push(new FontResource(
-                        found.section.name,
-                        found.page.image.file,
+                        found.section.file,
+                        found.page.image,
                         chars,
                         bmfont.font.metrics.lineHeight,
                         found.section.x,
@@ -496,7 +456,7 @@ class Packer
 
         for (sprite in sprites)
         {
-            switch findSection(sprite.id, pages)
+            switch findSection(sprite.id, atlas.pages)
             {
                 case Success(found):
                     final sets = new Map<String, Array<SpriteFrameResource>>();
@@ -520,8 +480,8 @@ class Packer
                     }
 
                     assets.push(new SpriteResource(
-                        found.section.name,
-                        found.page.image.file,
+                        found.section.file,
+                        found.page.image,
                         found.section.x,
                         found.section.y,
                         found.section.width,
@@ -682,13 +642,13 @@ class Packer
      * @param _name Name of the section to search for.
      * @param _pages Structure containing the page and section.
      */
-    function findSection(_name : String, _pages : ReadOnlyArray<GdxPage>) : Result<{ page : GdxPage, section : GdxSection }>
+    function findSection(_name : String, _pages : ReadOnlyArray<JsonAtlasPage>) : Result<{ page : JsonAtlasPage, section : JsonAtlasImage }>
     {
         for (page in _pages)
         {
             final section = page
-                .sections
-                .find(section -> section.name == _name);
+                .packed
+                .find(section -> section.file == _name);
 
             if (section != null)
             {
