@@ -310,7 +310,7 @@ class Packer
 
         // Pack all of our collected images
 
-        switch proc.run('hx-atlas-gen', [
+        switch proc.run(Path.join([ toolsDir, Utils.atlasCreatorExecutable() ]), [
             '--directory', tempAssets,
             '--output', tempAssets,
             '--name', _parcel.name,
@@ -318,7 +318,8 @@ class Packer
             '--height', Std.string(_options.pageMaxHeight),
             '--x-pad', Std.string(_options.pagePadX),
             '--y-pad', Std.string(_options.pagePadY),
-            '--threads', '4'
+            '--threads', '4',
+            '--raw'
         ])
         {
             case Failure(message): return Failure(message);
@@ -334,13 +335,13 @@ class Packer
 
         for (page in atlas.pages)
         {
-            final png = Path.join([ tempAssets, page.image ]);
+            final img = new Path(Path.join([ tempAssets, page.image ]));
 
             assets.push(new ImageResource(
                 page.image,
                 page.width,
                 page.height,
-                imageBytes(png)));
+                imageBytes(img)));
         }
 
         // Search for all of our composited images within the pages
@@ -664,15 +665,22 @@ class Packer
      * @param _path Path to the image.
      * @return Bytes
      */
-    function imageBytes(_path : String) : Bytes
+    function imageBytes(_path : Path) : Bytes
     {
-        final input = fs.file.read(_path);
-        final info  = new Reader(input).read();
-        final bytes = Tools.extract32(info);
+        return if (_path.ext == 'raw')
+        {
+            fs.file.getBytes(_path.toString());
+        }
+        else
+        {
+            final input = fs.file.read(_path.toString());
+            final info  = new Reader(input).read();
+            final bytes = Tools.extract32(info);
+    
+            input.close();
 
-        input.close();
-
-        return bytes;
+            bytes;
+        }
     }
 
     /**

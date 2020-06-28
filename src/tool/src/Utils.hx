@@ -44,6 +44,13 @@ class Utils
             case _ : 'msdf-atlas-gen';
         }
 
+    public static function atlasCreatorExecutable()
+        return switch platform()
+        {
+            case Windows : 'atlas-creator.exe';
+            case _ : 'atlas-creator';
+        }
+
     public static function glslangExecutable()
         return switch platform()
         {

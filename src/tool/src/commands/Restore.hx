@@ -52,7 +52,7 @@ class Restore
             case Failure(_): return res;
             case _:
         }
-        switch res = getLibgdxTexturePacker()
+        switch res = getAtlasCreator()
         {
             case Failure(_): return res;
             case _:
@@ -75,23 +75,46 @@ class Restore
             case Mac     : 'https://github.com/flurry-engine/msdf-atlas-gen/releases/download/CI/macOS-latest.tar.gz';
             case Linux   : 'https://github.com/flurry-engine/msdf-atlas-gen/releases/download/CI/ubuntu-latest.tar.gz';
         }
+        
+        return githubDownload(url, tool);
+    }
 
-        if (fs.file.exists(tool))
+    function getAtlasCreator() : Result<Unit>
+    {
+        final tool = Path.join([ toolPath, Utils.atlasCreatorExecutable() ]);
+        final url  = switch Utils.platform()
+        {
+            case Windows : 'https://github.com/flurry-engine/atlas-creator/releases/download/CI/windows-latest.tar.gz';
+            case Mac     : 'https://github.com/flurry-engine/atlas-creator/releases/download/CI/macOS-latest.tar.gz';
+            case Linux   : 'https://github.com/flurry-engine/atlas-creator/releases/download/CI/ubuntu-latest.tar.gz';
+        }
+        
+        return githubDownload(url, tool);
+    }
+
+    function getGlslang() : Result<Unit>
+    {
+        return Success(Unit.value);
+    }
+
+    function githubDownload(_url : String, _tool : String) : Result<Unit>
+    {
+        if (fs.file.exists(_tool))
         {
             return Success(Unit.value);
         }
-        
-        return switch net.download(url, proc)
+
+        return switch net.download(_url, proc)
         {
             case Success(data):
                 final input = new BytesInput(data);
                 final entry = new Reader(input).read().first().sure();
 
-                fs.file.writeBytes(tool, entry.data.sure());
+                fs.file.writeBytes(_tool, entry.data.sure());
 
                 if (Utils.platform() != Windows)
                 {
-                    switch proc.run('chmod', [ 'a+x', tool ])
+                    switch proc.run('chmod', [ 'a+x', _tool ])
                     {
                         case Failure(message): return Failure(message);
                         case _:
@@ -103,30 +126,5 @@ class Restore
                 Success(Unit.value);
             case Failure(message): Failure(message);
         }
-    }
-
-    function getLibgdxTexturePacker() : Result<Unit>
-    {
-        final tool = Path.join([ toolPath, 'runnable-texturepacker.jar' ]);
-
-        if (fs.file.exists(tool))
-        {
-            return Success(Unit.value);
-        }
-
-        return switch net.download('https://libgdx.badlogicgames.com/nightlies/runnables/runnable-texturepacker.jar', proc)
-        {
-            case Success(data): {
-                fs.file.writeBytes(tool, data);
-
-                Success(Unit.value);
-            }
-            case Failure(message): Failure(message);
-        }
-    }
-
-    function getGlslang() : Result<Unit>
-    {
-        return Success(Unit.value);
     }
 }
