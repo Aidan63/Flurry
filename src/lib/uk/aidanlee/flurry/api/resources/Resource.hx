@@ -19,7 +19,6 @@ enum ResourceType
     ImageFrame;
     Sprite;
     Shader;
-    Custom(_name : String);
 }
 
 class Resource implements Serializable

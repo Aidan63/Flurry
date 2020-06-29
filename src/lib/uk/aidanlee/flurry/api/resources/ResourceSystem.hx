@@ -265,16 +265,13 @@ using rx.Observable;
                 {
                     return false;
                 }
-            }   
+            }
         }
 
-        for (i in 0...parcel.assets.length)
+        for (i => asset in parcel.assets)
         {
             _observer.onNext(
-                Progress(
-                    i / parcel.assets.length,
-                    parcel.assets[i]
-                )
+                Progress(i / parcel.assets.length, asset)
             );
         }
 

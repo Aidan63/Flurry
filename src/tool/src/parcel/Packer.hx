@@ -319,7 +319,7 @@ class Packer
             '--x-pad', Std.string(_options.pagePadX),
             '--y-pad', Std.string(_options.pagePadY),
             '--threads', '4',
-            '--raw'
+            '--format', 'png'
         ])
         {
             case Failure(message): return Failure(message);
@@ -329,7 +329,7 @@ class Packer
         // Read the packed result
 
         final assets = new Array<Resource>();
-        final atlas : JsonAtlas = tink.Json.parse(fs.file.getText(Path.join([ tempAssets, '${ _parcel.name }.json' ]))); //GdxParser.parse(Path.join([ tempAssets, '${ _parcel.name }.json' ]), fs);
+        final atlas : JsonAtlas = tink.Json.parse(fs.file.getText(Path.join([ tempAssets, '${ _parcel.name }.json' ])));
 
         // Create images for all unique pages
 
@@ -667,20 +667,13 @@ class Packer
      */
     function imageBytes(_path : Path) : Bytes
     {
-        return if (_path.ext == 'raw')
-        {
-            fs.file.getBytes(_path.toString());
-        }
-        else
-        {
-            final input = fs.file.read(_path.toString());
-            final info  = new Reader(input).read();
-            final bytes = Tools.extract32(info);
-    
-            input.close();
+        final input = fs.file.read(_path.toString());
+        final info  = new Reader(input).read();
+        final bytes = Tools.extract32(info);
 
-            bytes;
-        }
+        input.close();
+
+        return bytes;
     }
 
     /**
