@@ -57,7 +57,7 @@ class RestoreCommandTests extends BuddySuite
                 fs.file.exists('bin/tools/windows/msdf-atlas-gen.exe').should.be(true);
                 fs.file.getText('bin/tools/windows/msdf-atlas-gen.exe').should.be('hello world');
             });
-            it('will download the libgdx texture packer jar', {
+            it('will download the atlas-creator tool', {
                 final fs      = new MockFileSystem([], []);
                 final net     = mock(Net);
                 final proc    = mock(Proc);
@@ -68,9 +68,9 @@ class RestoreCommandTests extends BuddySuite
 
                 new Restore(project, fs, net, proc).run().should.equal(Success(Unit.value));
 
-                Mockatoo.verify(net.download('https://libgdx.badlogicgames.com/nightlies/runnables/runnable-texturepacker.jar', proc), 1);
-                fs.file.exists('bin/tools/windows/runnable-texturepacker.jar').should.be(true);
-                fs.file.getText('bin/tools/windows/runnable-texturepacker.jar').should.be(haxe.Resource.getString('tgz_data'));
+                Mockatoo.verify(net.download('https://github.com/flurry-engine/atlas-creator/releases/download/CI/windows-latest.tar.gz', proc), 1);
+                fs.file.exists('bin/tools/windows/atlas-creator.exe').should.be(true);
+                fs.file.getText('bin/tools/windows/atlas-creator.exe').should.be('hello world');
             });
         });
     }

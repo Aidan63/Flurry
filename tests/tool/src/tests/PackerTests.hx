@@ -1,5 +1,7 @@
 package tests;
 
+import parcel.Types.JsonAtlas;
+import parcel.Types.JsonAtlasPage;
 import parcel.Types.JsonSprite;
 import parcel.GdxParser.GdxSection;
 import parcel.GdxParser.GdxPage;
@@ -500,14 +502,18 @@ class PackerTests extends BuddySuite
 
                     return Success(Unit.value);
                 });
-                Mockatoo.when(proc.run('java', anyIterator)).thenCall(f -> {
+                Mockatoo.when(proc.run(Path.join([ Utils.toolPath(project), Utils.atlasCreatorExecutable() ]), anyIterator)).thenCall(f -> {
                     final args   = (cast f[1] : Array<String>);
-                    final outDir = args[4];
+                    final outDir = args[3];
                     final parcel = args[5];
-                    final atlas  = createAtlas([ new GdxPage(new Path('$parcel.png'), 8, 8, [ new GdxSection('custom_font', 0, 0, 8, 8) ]) ]);
+                    final atlas  = createAtlas([
+                        { image: '$parcel.png', width: 8, height: 8, packed: [
+                            { file: 'custom_font', x:  0, y: 0, width: 8, height: 8 }
+                        ] }
+                    ]);
 
                     fs.files.set(Path.join([ outDir, '$parcel.png' ]), MockFileData.fromBytes(createDummyPng()));
-                    fs.files.set(Path.join([ outDir, '$parcel.atlas' ]), MockFileData.fromText(atlas));
+                    fs.files.set(Path.join([ outDir, '$parcel.json' ]), MockFileData.fromText(atlas));
 
                     return Success(Unit.value);
                 });
@@ -519,7 +525,7 @@ class PackerTests extends BuddySuite
                         final parcel = unpack(data[0].bytes);
 
                         // Check the image that should have been made from packing the font
-                        final resource = (cast parcel.assets.find(r -> r.id == 'parcel' && r.type == Image) : ImageResource);
+                        final resource = (cast parcel.assets.find(r -> r.id == 'parcel.png' && r.type == Image) : ImageResource);
                         resource.width.should.be(8);
                         resource.height.should.be(8);
 
@@ -527,7 +533,7 @@ class PackerTests extends BuddySuite
                         final resource = (cast parcel.assets.find(r -> r.id == 'custom_font' && r.type == Font) : FontResource);
 
                         resource.id.should.be('custom_font');
-                        resource.image.should.be('parcel');
+                        resource.image.should.be('parcel.png');
                         resource.x.should.be(0);
                         resource.y.should.be(0);
                         resource.width.should.be(8);
@@ -540,7 +546,7 @@ class PackerTests extends BuddySuite
                         fail(message);
                 }
             });
-            it('will call java with the libgdx-texturepacker.jar to combine all images', {
+            it('will call atlas-creator tool to combine all images', {
                 final assets : JsonDefinition = {
                     assets : {
                         bytes : [],
@@ -569,18 +575,20 @@ class PackerTests extends BuddySuite
                 final proc    = mock(Proc);
                 final packer  = new Packer(project, fs, proc);
 
-                Mockatoo.when(proc.run('java', anyIterator)).thenCall(f -> {
+                Mockatoo.when(proc.run(Path.join([ Utils.toolPath(project), Utils.atlasCreatorExecutable() ]), anyIterator)).thenCall(f -> {
                     final args   = (cast f[1] : Array<String>);
-                    final outDir = args[4];
+                    final outDir = args[3];
                     final parcel = args[5];
-                    final atlas  = createAtlas([ new GdxPage(new Path('$parcel.png'), 22, 6, [
-                        new GdxSection('img1',  0, 0,  4, 6),
-                        new GdxSection('img2',  4, 0,  8, 3),
-                        new GdxSection('img3', 12, 0, 10, 2)
-                    ]) ]);
+                    final atlas  = createAtlas([
+                        { image: '$parcel.png', width: 22, height: 6, packed: [
+                            { file: 'img1', x:  0, y: 0, width:  4, height: 6 },
+                            { file: 'img2', x:  4, y: 0, width:  8, height: 3 },
+                            { file: 'img3', x: 12, y: 0, width: 10, height: 2 }
+                        ] }
+                    ]);
 
                     fs.files.set(Path.join([ outDir, '$parcel.png' ]), MockFileData.fromBytes(createDummyPng(22, 6)));
-                    fs.files.set(Path.join([ outDir, '$parcel.atlas' ]), MockFileData.fromText(atlas));
+                    fs.files.set(Path.join([ outDir, '$parcel.json' ]), MockFileData.fromText(atlas));
 
                     return Success(Unit.value);
                 });
@@ -590,12 +598,12 @@ class PackerTests extends BuddySuite
                     case Success(data):
                         final parcel = unpack(data[0].bytes);
 
-                        final image = (cast parcel.assets.find(r -> r.id == 'parcel' && r.type == Image) : ImageResource);
+                        final image = (cast parcel.assets.find(r -> r.id == 'parcel.png' && r.type == Image) : ImageResource);
                         image.width.should.be(22);
                         image.height.should.be(6);
 
                         final resource = (cast parcel.assets.find(r -> r.id == 'img1' && r.type == ImageFrame) : ImageFrameResource);
-                        resource.image.should.be('parcel');
+                        resource.image.should.be('parcel.png');
                         resource.x.should.be(0);
                         resource.y.should.be(0);
                         resource.width.should.be(4);
@@ -606,7 +614,7 @@ class PackerTests extends BuddySuite
                         resource.v2.should.beCloseTo((resource.y + resource.height) / image.height);
 
                         final resource = (cast parcel.assets.find(r -> r.id == 'img2' && r.type == ImageFrame) : ImageFrameResource);
-                        resource.image.should.be('parcel');
+                        resource.image.should.be('parcel.png');
                         resource.x.should.be(4);
                         resource.y.should.be(0);
                         resource.width.should.be(8);
@@ -617,7 +625,7 @@ class PackerTests extends BuddySuite
                         resource.v2.should.beCloseTo((resource.y + resource.height) / image.height);
 
                         final resource = (cast parcel.assets.find(r -> r.id == 'img3' && r.type == ImageFrame) : ImageFrameResource);
-                        resource.image.should.be('parcel');
+                        resource.image.should.be('parcel.png');
                         resource.x.should.be(12);
                         resource.y.should.be(0);
                         resource.width.should.be(10);
@@ -730,14 +738,18 @@ class PackerTests extends BuddySuite
                     return Success(Unit.value);
                 });
 
-                Mockatoo.when(proc.run('java', anyIterator)).thenCall(f -> {
+                Mockatoo.when(proc.run(Path.join([ Utils.toolPath(project), Utils.atlasCreatorExecutable() ]), anyIterator)).thenCall(f -> {
                     final args   = (cast f[1] : Array<String>);
-                    final outDir = args[4];
+                    final outDir = args[3];
                     final parcel = args[5];
-                    final atlas  = createAtlas([ new GdxPage(new Path('$parcel.png'), 64, 32, [ new GdxSection('sprite', 0, 0, 64, 32) ]) ]);
+                    final atlas  = createAtlas([
+                        { image: '$parcel.png', width: 64, height: 32, packed: [
+                            { file: 'sprite', x: 0, y: 0, width: 64, height: 32 },
+                        ] }
+                    ]);
 
                     fs.files.set(Path.join([ outDir, '$parcel.png' ]), MockFileData.fromBytes(createDummyPng(64, 32)));
-                    fs.files.set(Path.join([ outDir, '$parcel.atlas' ]), MockFileData.fromText(atlas));
+                    fs.files.set(Path.join([ outDir, '$parcel.json' ]), MockFileData.fromText(atlas));
 
                     return Success(Unit.value);
                 });
@@ -747,12 +759,12 @@ class PackerTests extends BuddySuite
                     case Success(data):
                         final parcel = unpack(data[0].bytes);
 
-                        final image = (cast parcel.assets.find(r -> r.id == 'parcel' && r.type == Image) : ImageResource);
+                        final image = (cast parcel.assets.find(r -> r.id == 'parcel.png' && r.type == Image) : ImageResource);
                         image.width.should.be(64);
                         image.height.should.be(32);
 
                         final resource = (cast parcel.assets.find(r -> r.id == 'sprite' && r.type == Sprite) : SpriteResource);
-                        resource.image.should.be('parcel');
+                        resource.image.should.be('parcel.png');
                         resource.x.should.be(0);
                         resource.y.should.be(0);
                         resource.width.should.be(64);
@@ -847,17 +859,19 @@ class PackerTests extends BuddySuite
                 final proc    = mock(Proc);
                 final packer  = new Packer(project, fs, proc);
 
-                Mockatoo.when(proc.run('java', anyIterator)).thenCall(f -> {
+                Mockatoo.when(proc.run(Path.join([ Utils.toolPath(project), Utils.atlasCreatorExecutable() ]), anyIterator)).thenCall(f -> {
                     final args   = (cast f[1] : Array<String>);
-                    final outDir = args[4];
+                    final outDir = args[3];
                     final parcel = args[5];
-                    final atlas  = createAtlas([ new GdxPage(new Path('$parcel.png'), 1024, 256, [
-                        new GdxSection('image' ,   0, 0, 512, 256),
-                        new GdxSection('image2', 512, 0, 512, 256)
-                    ]) ]);
+                    final atlas  = createAtlas([
+                        { image: '$parcel.png', width: 1024, height: 256, packed: [
+                            { file: 'image', x:   0, y: 0, width: 512, height: 256 },
+                            { file: 'image2', x: 512, y: 0, width: 512, height: 256 }
+                        ] }
+                    ]);
 
                     fs.files.set(Path.join([ outDir, '$parcel.png' ]), MockFileData.fromBytes(createDummyPng(1024, 256)));
-                    fs.files.set(Path.join([ outDir, '$parcel.atlas' ]), MockFileData.fromText(atlas));
+                    fs.files.set(Path.join([ outDir, '$parcel.json' ]), MockFileData.fromText(atlas));
 
                     return Success(Unit.value);
                 });
@@ -867,12 +881,12 @@ class PackerTests extends BuddySuite
                     case Success(data):
                         final parcel = unpack(data[0].bytes);
 
-                        final image = (cast parcel.assets.find(r -> r.id == 'parcel' && r.type == Image) : ImageResource);
+                        final image = (cast parcel.assets.find(r -> r.id == 'parcel.png' && r.type == Image) : ImageResource);
                         image.width.should.be(1024);
                         image.height.should.be(256);
 
                         final resource = (cast parcel.assets.find(r -> r.id == 'section_1' && r.type == ImageFrame) : ImageFrameResource);
-                        resource.image.should.be('parcel');
+                        resource.image.should.be('parcel.png');
                         resource.x.should.be(4);
                         resource.y.should.be(128);
                         resource.width.should.be(64);
@@ -883,7 +897,7 @@ class PackerTests extends BuddySuite
                         resource.v2.should.beCloseTo((resource.y + resource.height) / image.height);
 
                         final resource = (cast parcel.assets.find(r -> r.id == 'section_2' && r.type == ImageFrame) : ImageFrameResource);
-                        resource.image.should.be('parcel');
+                        resource.image.should.be('parcel.png');
                         resource.x.should.be(16);
                         resource.y.should.be(0);
                         resource.width.should.be(48);
@@ -894,7 +908,7 @@ class PackerTests extends BuddySuite
                         resource.v2.should.beCloseTo((resource.y + resource.height) / image.height);
 
                         final resource = (cast parcel.assets.find(r -> r.id == 'section_3' && r.type == ImageFrame) : ImageFrameResource);
-                        resource.image.should.be('parcel');
+                        resource.image.should.be('parcel.png');
                         resource.x.should.be(560);
                         resource.y.should.be(95);
                         resource.width.should.be(184);
@@ -905,7 +919,7 @@ class PackerTests extends BuddySuite
                         resource.v2.should.beCloseTo((resource.y + resource.height) / image.height);
 
                         final resource = (cast parcel.assets.find(r -> r.id == 'section_4' && r.type == ImageFrame) : ImageFrameResource);
-                        resource.image.should.be('parcel');
+                        resource.image.should.be('parcel.png');
                         resource.x.should.be(554);
                         resource.y.should.be(16);
                         resource.width.should.be(45);
@@ -985,31 +999,13 @@ class PackerTests extends BuddySuite
         return output.getBytes();
     }
 
-    function createAtlas(_pages : Array<GdxPage>) : String
+    function createAtlas(_pages : Array<JsonAtlasPage>) : String
     {
-        final builder = new StringBuf();
-        builder.add('\r\n');
-
-        for (page in _pages)
-        {
-            builder.add('${ page.image }\r\n');
-            builder.add('size: ${ page.width },${ page.height }\r\n');
-            builder.add('format: RGBA8888\r\n');
-            builder.add('filter: Nearest,Nearest\r\n');
-            builder.add('repeat: none\r\n');
-
-            for (section in page.sections)
-            {
-                builder.add('${ section.name }\r\n');
-                builder.add('  rotate: false\r\n');
-                builder.add('  xy: ${ section.x }, ${ section.y }\r\n');
-                builder.add('  size: ${ section.width }, ${ section.height }\r\n');
-                builder.add('  orig: 0, 0\r\n');
-                builder.add('  offset: 0, 0\r\n');
-                builder.add('  index: -1\r\n');
-            }
+        final data : JsonAtlas = {
+            name  : 'parcel',
+            pages : _pages
         }
 
-        return builder.toString();
+        return tink.Json.stringify(data);
     }
 }
