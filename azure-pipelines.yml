@@ -34,13 +34,10 @@ jobs:
         testRunTitle: Engine Tests $(Agent.OS)
         buildPlatform: $(Agent.OS)
         failTaskOnFailedTests: true
-    - task: PublishCodeCoverageResults@1
-      inputs:
-        summaryFileLocation: tests/unit/jacoco-coverage.xml
-        codeCoverageTool: JaCoCo
-        pathToSources: tests/unit
-        failIfCoverageEmpty: true
-        
+    - bash: <(curl -s https://codecov.io/bash) -f codecov.json
+      displayName: Upload to codecov.io
+      workingDirectory: $(Build.SourcesDirectory)/tests/unit        
+      condition: succeededOrFailed()
 
   - job: JsUnitTests
     displayName: Js Unit Tests
