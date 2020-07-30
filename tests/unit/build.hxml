@@ -19,10 +19,6 @@
 
 --dce full
 
--D coverage-lcov-reporter
-
---macro instrument.Instrumentation.coverage([ 'uk.aidanlee.flurry.api.buffers', 'uk.aidanlee.flurry.api.core', 'uk.aidanlee.flurry.api.display', 'uk.aidanlee.flurry.api.input', 'uk.aidanlee.flurry.api.maths', 'uk.aidanlee.flurry.api.resources', 'uk.aidanlee.flurry.api.schedulers', 'uk.aidanlee.flurry.api.stream', 'uk.aidanlee.flurry.api.gpu.batcher', 'uk.aidanlee.flurry.api.gpu.camera', 'uk.aidanlee.flurry.api.gpu.geometry', 'uk.aidanlee.flurry.api.gpu.state', 'uk.aidanlee.flurry.api.gpu.textures', 'uk.aidanlee.flurry.api.gpu.batcher', 'uk.aidanlee.flurry.modules.differ' ], [ '../../src/lib' ], [ ])
-
 --macro nullSafety('uk.aidanlee.flurry.modules', Strict)
 --macro nullSafety('uk.aidanlee.flurry.api', Strict)
 --macro Safety.safeNavigation('uk.aidanlee.flurry')
