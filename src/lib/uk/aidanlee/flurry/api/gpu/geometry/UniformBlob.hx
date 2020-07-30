@@ -14,7 +14,7 @@ using Safety;
  * Contains a byte buffer which will be copied to the gpu for use in shaders.
  * Has several functions for updating the attributes contained within.
  */
-class UniformBlob
+@ignoreInstrument class UniformBlob
 {
     /**
      * ID of the uniform blob.
