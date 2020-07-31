@@ -34,8 +34,8 @@ jobs:
         testRunTitle: Engine Tests $(Agent.OS)
         buildPlatform: $(Agent.OS)
         failTaskOnFailedTests: true
-    - script: |
-        bash <(curl -s https://codecov.io/bash) -f codecov.json
+    - bash: |
+        bash <(curl -s https://codecov.io/bash)
       displayName: Upload to codecov.io
       workingDirectory: $(Build.SourcesDirectory)/tests/unit        
       condition: succeededOrFailed()
